@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# Creates a restricted backup user for Koha backups used by the Windows automation.
-# - Creates user and password (or uses provided password)
-# - Installs SSH public key if provided
-# - Grants NOPASSWD sudo for only the required commands:
+# Creates a restricted backup user for Koha backups consumed by the Windows automation.
+# It will:
+# - Create the user and set a password (or use the provided password).
+# - Optionally install an SSH public key for key-based auth.
+# - Grant NOPASSWD sudo for only the required commands:
 #     * koha-run-backups (any instance)
 #     * cp from /var/spool/koha/*/* to /tmp/*
 #     * chmod 644 /tmp/*
 #     * shutdown now (can be disabled with --no-shutdown)
 #
 # Usage:
-#   sudo bash provision-koha-backup-user.sh \
+#   sudo bash backup-user.sh \
 #     --user backup \
 #     --password 'S3curePass!' \
 #     --ssh-key-file /path/to/id_ed25519.pub \
 #     --no-shutdown
 #
 # Or:
-#   sudo bash provision-koha-backup-user.sh --user backup --ssh-key 'ssh-ed25519 AAAA... comment'
+#   sudo bash backup-user.sh --user backup --ssh-key 'ssh-ed25519 AAAA... comment'
 #
 set -euo pipefail
 
@@ -28,7 +29,7 @@ SSH_KEY_TEXT=""
 ALLOW_SHUTDOWN=1
 
 print_help() {
-  sed -n '1,60p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '1,80p' "$0" | sed 's/^# \{0,1\}//'
   exit 0
 }
 

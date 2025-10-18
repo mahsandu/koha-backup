@@ -1,11 +1,11 @@
 # Koha Backup, Download, and Optional Shutdown (Windows)
 
-This repo contains a Windows batch script that connects to a remote Koha server over SSH, triggers or skips Koha backups based on recency, fetches the latest backup files to your Windows machine, and optionally shuts down the remote server. No Telegram integration is used.
+This repository provides Windows batch scripts that connect to a remote Koha server over SSH, trigger or skip Koha backups based on recency, download the latest backup files to your Windows machine, and can optionally shut down the remote server.
 
 ## What it does
 
 - Ensures the PuTTY tools (`plink.exe`, `pscp.exe`) are available (auto-downloads into `tools/` if missing).
-- Discovers and stores the remote server SSH host fingerprint to avoid interactive host-key prompts in batch mode.
+- Discovers and stores the remote server SSH host fingerprint to avoid interactive host-key prompts in batch mode (TOFU).
 - Optionally runs `koha-run-backups <instance>` on the remote server unless a fresh backup already exists (within the last hour).
 - Finds the two most recent Koha backup files (`.sql.gz` and `.tar.gz`) from `/var/spool/koha/<instance>`.
 - Copies them to `/tmp` on the remote and adjusts permissions for download.
@@ -16,7 +16,8 @@ This repo contains a Windows batch script that connects to a remote Koha server 
 
 ## Repository contents
 
-- `backup-download-shutdown-telegram.bat` — Main Windows batch script (name retained for continuity; no Telegram usage).
+- `backup-download-shutdown.bat` — Main Windows batch script (optional remote shutdown via flag).
+- `backup-download-no-shutdown.bat` — Wrapper that always skips remote shutdown.
 - `backup-user.sh` — Linux-side helper to provision a restricted backup user with minimal sudo rights.
 - `backups/` — Destination for downloaded backup files; contains `backup_log.txt`.
 - `tools/` — Holds `plink.exe` and `pscp.exe` after first run (auto-downloaded if missing).
@@ -29,39 +30,39 @@ This repo contains a Windows batch script that connects to a remote Koha server 
 
 ## Configure the Windows script
 
-Open `backup-download-shutdown-telegram.bat` and set the variables near the top:
+Open `backup-download-shutdown.bat` and set these variables near the top:
 
 - `USERNAME` — Remote Linux username (e.g., `backup`).
 - `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes).
 - `IP` — IP address or hostname of the Koha server.
 - `INSTANCE` — Koha instance name, used to build the remote backup path.
 
-The script writes logs to `backups/backup_log.txt`. The PuTTY tools are placed in `tools/`.
+The script writes logs to `backups/backup_log.txt`. The PuTTY tools will be placed in `tools/` upon first run if missing.
 
 ## Usage
 
 Dry-run (no remote actions):
 
 ```powershell
-& '.\backup-download-shutdown-telegram.bat' test
+& '.\\backup-download-shutdown.bat' test
 ```
 
 Real run (performs backup if needed, downloads files, may shut down remote):
 
 ```powershell
-& '.\backup-download-shutdown-telegram.bat'
+& '.\\backup-download-shutdown.bat'
 ```
 
 Skip remote shutdown explicitly:
 
 ```powershell
-& '.\backup-download-shutdown-telegram.bat' --no-shutdown
+& '.\\backup-download-shutdown.bat' --no-shutdown
 ```
 
 Combine options:
 
 ```powershell
-& '.\backup-download-shutdown-telegram.bat' test --no-shutdown
+& '.\\backup-download-shutdown.bat' test --no-shutdown
 ```
 
 Outputs:
@@ -111,13 +112,13 @@ You can run the script on a schedule, e.g., nightly after Koha maintenance.
 
 - Action: Start a program
 - Program/script: `C:\\Windows\\System32\\cmd.exe`
-- Add arguments: `/c "D:\\path\\to\\backup-download-shutdown-telegram.bat --no-shutdown"`
+- Add arguments: `/c "D:\\path\\to\\backup-download-shutdown.bat --no-shutdown"`
 - Start in: `D:\\path\\to\\repo` (folder containing the script)
 
-Alternatively, call it via PowerShell:
+Alternatively, schedule via PowerShell:
 
 - Program/script: `powershell.exe`
-- Add arguments: `-NoProfile -ExecutionPolicy Bypass -Command "& 'D:\\path\\to\\backup-download-shutdown-telegram.bat' --no-shutdown"`
+- Add arguments: `-NoProfile -ExecutionPolicy Bypass -Command "& 'D:\\path\\to\\backup-download-shutdown.bat' --no-shutdown"`
 
 ## Troubleshooting
 
@@ -134,7 +135,7 @@ Alternatively, call it via PowerShell:
 ## Known limitations / next steps
 
 - Only `.tar.gz` files are rotated; `.sql.gz` retention is unlimited. You can extend the cleanup section to include `.sql.gz` if desired.
-- The main script filename still includes `-telegram` for continuity. You can rename it (and update any scheduler entries) if you want a cleaner name.
+
 
 ---
 
