@@ -8,7 +8,7 @@ REM error messages are captured in the logs for easier debugging.
 
 REM Backup-download-shutdown helper (Windows .bat)
 REM Usage: backup-download-shutdown-telegram.bat [test]
-REM If "test" is passed as first argument, the script will do a dry-run and will not call plink/pscp or send Telegram messages.
+REM If "test" is passed as first argument, the script will do a dry-run and will not call plink/pscp.
 
 REM === CONFIGURATION ===
 SET USERNAME=backup
@@ -124,12 +124,10 @@ REM Check downloads (unless test mode)
 if "%TEST_MODE%"=="0" (
     if not exist "%PLINK%" (
         echo [%date% %time%] ERROR: plink.exe missing! Exiting.
-        call "%SCRIPT_DIR%\send-telegram.bat" "⚠️ ERROR: plink.exe missing during backup"
         exit /b 1
     )
     if not exist "%PSCP%" (
         echo [%date% %time%] ERROR: pscp.exe missing! Exiting.
-        call "%SCRIPT_DIR%\send-telegram.bat" "⚠️ ERROR: pscp.exe missing during backup"
         exit /b 1
     )
 )
@@ -152,7 +150,6 @@ echo [%date% %time%] Backup command RC: %RC% >> "%LOG_FILE%"
 
 if not "%RC%"=="0" (
     echo [%date% %time%] ERROR: Remote backup command failed!
-    call "%SCRIPT_DIR%\send-telegram.bat" "⚠️ Koha backup FAILED for %INSTANCE% at %date% %time%"
     exit /b 1
 )
 
@@ -217,7 +214,6 @@ for %%b in (%LATEST_BACKUP1% %LATEST_BACKUP2%) do (
     if not "%RC%"=="0" (
         echo [%date% %time%] ERROR: Failed to download backup %%b! >> "%LOG_FILE%"
         echo [%date% %time%] ERROR: Failed to download backup %%b!
-        call "%SCRIPT_DIR%\send-telegram.bat" "⚠️ Failed to download backup %%b for %INSTANCE% at %date% %time%"
         exit /b 1
     )
 )
@@ -249,7 +245,6 @@ if "%NO_SHUTDOWN%"=="1" (
 
 echo [%date% %time%] Backup completed successfully. >> "%LOG_FILE%"
 echo [%date% %time%] Backup completed successfully.
-call "%SCRIPT_DIR%\send-telegram.bat" "✅ Koha backups for %INSTANCE% completed successfully at %date% %time% (SQL: %LATEST_BACKUP1%, Files: %LATEST_BACKUP2%)"
 
 echo Done. See log at: %LOG_FILE%
 
@@ -259,7 +254,6 @@ goto :eof
 echo [%date% %time%] ERROR: No valid backup filenames found in remote listing. Aborting. >> "%LOG_FILE%"
 echo [%date% %time%] Remote ls output (for debugging): >> "%LOG_FILE%"
 if exist "%TMP_LATEST%" type "%TMP_LATEST%" >> "%LOG_FILE%" 2>&1
-call "%SCRIPT_DIR%\send-telegram.bat" "⚠️ Koha backup FAILED: no valid backup filenames found on remote server. Check host key and remote path."
 exit /b 1
 
 
