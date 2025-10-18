@@ -1,2 +1,12 @@
 *.txt
 *.exe
+
+# Ignore downloaded tools and backup artifacts
+/tools/
+/backups/*.tar.gz
+/backups/*.sql.gz
+/backups/backup_log.txt
+
+# macOS and Windows junk
+.DS_Store
+Thumbs.db
