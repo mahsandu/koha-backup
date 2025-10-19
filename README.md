@@ -30,12 +30,25 @@ This repository provides Windows batch scripts that connect to a remote Koha ser
 
 ## Configure the Windows script
 
-Open `backup-download-shutdown.bat` and set these variables near the top:
+You can configure via a `config.txt` file placed next to the script (preferred), or by editing the script defaults.
 
-- `USERNAME` — Remote Linux username (e.g., `backup`).
-- `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes).
-- `IP` — IP address or hostname of the Koha server.
-- `INSTANCE` — Koha instance name, used to build the remote backup path.
+1) Using `config.txt` (recommended)
+
+- Copy `config.example.txt` to `config.txt` and edit values.
+- Supported keys (key=value):
+  - `USERNAME` — Remote Linux username (e.g., `backup`).
+  - `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes).
+  - `IP` — IP address or hostname of the Koha server.
+  - `INSTANCE` — Koha instance name, used to build the default remote backup path.
+  - `KOHA_BACKUP_PATH` — Optional explicit remote path (overrides instance-based path).
+  - `HOST_FINGERPRINT` — Server host key fingerprint (PuTTY format) used by plink/pscp.
+  - `RETENTION_FILES` — How many `.tar.gz` files to keep in `backups/` (default 30).
+  - `NO_SHUTDOWN` — 0 or 1; if 1, skip remote shutdown (CLI `--no-shutdown` overrides).
+  - `PLINK_URL`, `PSCP_URL` — Optional override URLs for PuTTY tools.
+
+2) Editing the script (fallback)
+
+- Open `backup-download-shutdown.bat` and update the default variables near the top.
 
 The script writes logs to `backups/backup_log.txt`. The PuTTY tools will be placed in `tools/` upon first run if missing.
 

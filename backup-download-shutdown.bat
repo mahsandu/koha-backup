@@ -8,14 +8,14 @@ REM  - "test": runs a dry-run; remote commands and downloads are NOT executed
 REM  - "--no-shutdown" or "no-shutdown": skip issuing a remote shutdown
 REM This script logs to backups\backup_log.txt.
 
-REM === CONFIGURATION ===
+REM === CONFIGURATION (defaults; can be overridden via config.txt) ===
 SET USERNAME=backup
 SET PASSWORD=backup@12345
 SET IP=10.10.10.10
 SET INSTANCE=ils
-
-REM Backup path on server depends on instance name
-SET KOHA_BACKUP_PATH=/var/spool/koha/%INSTANCE%
+SET HOST_FINGERPRINT=SHA256:zkRgpJmh+WcUyVvUonvhXTDZJVL5iIHlxDrfcY2RbQk
+SET RETENTION_FILES=30
+SET KOHA_BACKUP_PATH=
 
 REM === Use the script folder as the local backup folder ===
 SET SCRIPT_DIR=%~dp0
@@ -23,20 +23,50 @@ SET TOOLS_DIR=%SCRIPT_DIR%tools
 SET BACKUP_FOLDER=%SCRIPT_DIR%backups
 SET LOG_FILE=%BACKUP_FOLDER%\backup_log.txt
 
+REM Load optional config file (key=value) located next to this script
+set "CONFIG_FILE=%~dp0config.txt"
+if exist "%CONFIG_FILE%" (
+    set "CFG_SET_KOHA_PATH=0"
+    for /f "usebackq delims=" %%L in ("%CONFIG_FILE%") do (
+        set "line=%%L"
+        if not "!line!"=="" if not "!line:~0,1!"=="#" if not "!line:~0,1!"==";" (
+            for /f "tokens=1,* delims==" %%A in ("!line!") do (
+                set "key=%%~A"
+                set "val=%%~B"
+                for /f "tokens=* delims= " %%K in ("!key!") do set "key=%%K"
+                for /f "tokens=* delims= " %%V in ("!val!") do set "val=%%V"
+                if /I "!key!"=="USERNAME" set "USERNAME=!val!"
+                if /I "!key!"=="PASSWORD" set "PASSWORD=!val!"
+                if /I "!key!"=="IP" set "IP=!val!"
+                if /I "!key!"=="INSTANCE" set "INSTANCE=!val!"
+                if /I "!key!"=="HOST_FINGERPRINT" set "HOST_FINGERPRINT=!val!"
+                if /I "!key!"=="RETENTION_FILES" set "RETENTION_FILES=!val!"
+                if /I "!key!"=="NO_SHUTDOWN" set "NO_SHUTDOWN=!val!"
+                if /I "!key!"=="KOHA_BACKUP_PATH" ( set "KOHA_BACKUP_PATH=!val!" & set "CFG_SET_KOHA_PATH=1" )
+                if /I "!key!"=="PLINK_URL" set "PLINK_URL=!val!"
+                if /I "!key!"=="PSCP_URL" set "PSCP_URL=!val!"
+            )
+        )
+    )
+    if not defined RETENTION_FILES set RETENTION_FILES=30
+)
+
+REM Backup path on server depends on instance name unless explicitly provided
+if not defined KOHA_BACKUP_PATH set KOHA_BACKUP_PATH=/var/spool/koha/%INSTANCE%
+
 REM PuTTY tools locations and download URLs
 SET PLINK=%TOOLS_DIR%\plink.exe
 SET PSCP=%TOOLS_DIR%\pscp.exe
-SET PLINK_URL=https://the.earth.li/~sgtatham/putty/latest/w32/plink.exe
-SET PSCP_URL=https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe
-REM Known server fingerprint (used as a fallback if batch mode host-key confirmation fails)
-SET HOST_FINGERPRINT=SHA256:zkRgpJmh+WcUyVvUonvhXTDZJVL5iIHlxDrfcY2RbQk
+if not defined PLINK_URL SET PLINK_URL=https://the.earth.li/~sgtatham/putty/latest/w32/plink.exe
+if not defined PSCP_URL SET PSCP_URL=https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe
+REM Known server fingerprint (can be overridden via config.txt)
 
-REM Test mode?
+REM Test mode? (CLI args override config)
 SET TEST_MODE=0
 IF /I "%~1"=="test" (SET TEST_MODE=1)
 
 REM Optional flags: --no-shutdown or no-shutdown will prevent the script from issuing the remote shutdown.
-SET NO_SHUTDOWN=0
+if not defined NO_SHUTDOWN SET NO_SHUTDOWN=0
 IF /I "%~1"=="--no-shutdown" (SET NO_SHUTDOWN=1)
 IF /I "%~1"=="no-shutdown" (SET NO_SHUTDOWN=1)
 IF /I "%~2"=="--no-shutdown" (SET NO_SHUTDOWN=1)
@@ -220,9 +250,9 @@ REM List downloaded files
 echo [%date% %time%] Downloaded files in %BACKUP_FOLDER%: >> "%LOG_FILE%"
 dir "%BACKUP_FOLDER%" /b >> "%LOG_FILE%" 2>&1
 
-REM Cleanup old backups - keep only 30 newest
-echo [%date% %time%] Cleaning old backups... >> "%LOG_FILE%"
-for /f "skip=30 delims=" %%f in ('dir "%BACKUP_FOLDER%" /b /a-d /o-d ^| findstr /i ".tar.gz"') do (
+REM Cleanup old backups - keep only RETENTION_FILES newest .tar.gz
+echo [%date% %time%] Cleaning old backups (keeping %RETENTION_FILES%)... >> "%LOG_FILE%"
+for /f "skip=%RETENTION_FILES% delims=" %%f in ('dir "%BACKUP_FOLDER%" /b /a-d /o-d ^| findstr /i ".tar.gz"') do (
     echo Deleting %%f >> "%LOG_FILE%"
     del "%BACKUP_FOLDER%\%%f"
 )
