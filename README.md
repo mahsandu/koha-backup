@@ -21,6 +21,7 @@ This repository provides Windows batch scripts that connect to a remote Koha ser
 - `backup-user.sh` — Linux-side helper to provision a restricted backup user with minimal sudo rights.
 - `backups/` — Destination for downloaded backup files; contains `backup_log.txt`.
 - `tools/` — Holds `plink.exe` and `pscp.exe` after first run (auto-downloaded if missing).
+ - `setup-backup-user.bat` — Windows CMD helper that uploads and runs `backup-user.sh` remotely as root.
 
 ## Prerequisites
 
@@ -34,13 +35,14 @@ You can configure via a `config.txt` file placed next to the script (preferred),
 
 1) Using `config.txt` (recommended)
 
-- Copy `config.example.txt` to `config.txt` and edit values.
+- Copy `config.txt.example` to `config.txt` and edit values.
 - Supported keys (key=value):
   - `USERNAME` — Remote Linux username (e.g., `backup`).
   - `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes).
   - `IP` — IP address or hostname of the Koha server.
   - `INSTANCE` — Koha instance name, used to build the default remote backup path.
   - `KOHA_BACKUP_PATH` — Optional explicit remote path (overrides instance-based path).
+    - Ensure this matches your Koha install; e.g., `/var/spool/koha/<instance>` on Debian-based installs.
   - `HOST_FINGERPRINT` — Server host key fingerprint (PuTTY format) used by plink/pscp.
   - `RETENTION_FILES` — How many `.tar.gz` files to keep in `backups/` (default 30).
   - `NO_SHUTDOWN` — 0 or 1; if 1, skip remote shutdown (CLI `--no-shutdown` overrides).
@@ -104,6 +106,28 @@ What it configures:
   - `cp /var/spool/koha/*/* /tmp/*`
   - `chmod 644 /tmp/*`
   - `shutdown now` (only if you don’t pass `--no-shutdown`)
+
+### Provisioning from Windows (easier)
+
+If you have root credentials for the Koha server and prefer to set up the backup user from your Windows machine, use the helper script:
+
+```powershell
+& '.\\setup-backup-user.bat'
+```
+
+It will:
+
+- Prompt for the server host, root user/password, desired backup username/password
+- Optionally accept a path to an SSH public key (.pub) to install for key-based auth
+- Ensure PuTTY tools are available (downloads to `tools/` if missing)
+- Upload `backup-user.sh` to the server and run it as root
+- Try to auto-discover the SSH host fingerprint (TOFU); you can also paste it manually if needed
+
+Notes:
+
+- Your root password is used only to connect for setup and is not stored by the script.
+- Prefer installing an SSH key and using key-based auth for the backup user afterward.
+- If host key discovery fails, you can obtain the fingerprint via `ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub` on the server (or `ssh-keyscan -t ed25519 <host>`), then paste it when prompted.
 
 ## How it works (details)
 

@@ -1,0 +1,27 @@
+# Configuration for Koha backup scripts (key=value)
+# Copy to config.txt and adjust values as needed.
+# Lines starting with # or ; are comments.
+
+# Remote host/user credentials
+USERNAME=backup
+PASSWORD=backup@12345
+IP=10.10.10.10
+
+# Koha instance name (used if KOHA_BACKUP_PATH is not set)
+INSTANCE=ils
+
+# Optional explicit backup path on the server; if not set, defaults to /var/spool/koha/<instance>
+# KOHA_BACKUP_PATH=/var/spool/koha/ils
+
+# SSH host key fingerprint (PuTTY format) to enforce in batch mode
+HOST_FINGERPRINT=SHA256:zkRgpJmh+WcUyVvUonvhXTDZJVL5iIHlxDrfcY2RbQk
+
+# Retention count for .tar.gz files in backups/ (default 30)
+RETENTION_FILES=30
+
+# Whether to skip remote shutdown (0 or 1). CLI flags --no-shutdown/no-shutdown override this.
+NO_SHUTDOWN=0
+
+# Override download URLs for PuTTY tools if needed
+# PLINK_URL=https://the.earth.li/~sgtatham/putty/latest/w32/plink.exe
+# PSCP_URL=https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe

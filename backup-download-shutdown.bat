@@ -92,10 +92,6 @@ if "%TEST_MODE%"=="1" (
     echo [DRYRUN] Test mode active - no remote commands or downloads will run. >> "%LOG_FILE%"
 )
 
-REM Ensure PuTTY knows the server host key (so plink/pscp won't fail in batch mode).
-call :ensure_putty_hostkey
-
-
 REM Decide whether to skip backup generation based on latest file time (within last hour)
 set "SKIP_BACKUP=0"
 set "TMP_LATEST=%TEMP%\koha_latest_precheck.txt"
@@ -159,6 +155,9 @@ if "%TEST_MODE%"=="0" (
         exit /b 1
     )
 )
+
+REM Ensure PuTTY knows the server host key (so plink/pscp won't fail in batch mode).
+call :ensure_putty_hostkey
 
 REM Run backup command remotely (unless skipping)
 echo [%date% %time%] Running koha-run-backups on remote server... >> "%LOG_FILE%"
