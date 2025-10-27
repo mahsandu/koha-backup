@@ -1,27 +1,38 @@
 # Koha Backup, Download, and Optional Shutdown (Windows)
 
-This repository provides Windows batch scripts that connect to a remote Koha server over SSH, trigger or skip Koha backups based on recency, download the latest backup files to your Windows machine, and can optionally shut down the remote server.
+This repository provides Windows batch scripts that connect to a remote Koha server over SSH, automatically discover all enabled Koha instances, run backups, and download them to your Windows machine. Optionally shuts down the remote server after completion.
 
 ## What it does
 
-- Ensures the PuTTY tools (`plink.exe`, `pscp.exe`) are available (auto-downloads into `tools/` if missing).
-- Discovers and stores the remote server SSH host fingerprint to avoid interactive host-key prompts in batch mode (TOFU).
-- Optionally runs `koha-run-backups <instance>` on the remote server unless a fresh backup already exists (within the last hour).
-- Finds the two most recent Koha backup files (`.sql.gz` and `.tar.gz`) from `/var/spool/koha/<instance>`.
-- Copies them to `/tmp` on the remote and adjusts permissions for download.
-- Downloads both files to the local `backups/` folder next to the script.
-- Keeps only the 30 newest `.tar.gz` files in `backups/` (SQL `.sql.gz` files are currently not pruned).
-- Optionally shuts down the remote server (can be disabled with a flag at runtime, or provisioned server-side without shutdown rights).
-- Logs progress to `backups/backup_log.txt`.
+- **Auto-discovers all enabled Koha instances** via `koha-list --enabled` command
+- Downloads backups for ALL instances automatically (no manual configuration needed)
+- Organizes downloads into separate folders per instance: `backups\<instance>\`
+- Ensures the PuTTY tools (`plink.exe`, `pscp.exe`) are available (auto-downloads into `tools/` if missing)
+- Runs `koha-run-backups <instance>` on the remote server for each enabled instance
+- Finds the two most recent Koha backup files (`.sql.gz` and `.tar.gz`) from `/var/spool/koha/<instance>`
+- Copies them to `/tmp` on the remote and adjusts permissions for download
+- Downloads both files to the local `backups/<instance>/` folder
+- Keeps only the 30 newest `.tar.gz` files per instance (configurable via `RETENTION_FILES`)
+- Optionally shuts down the remote server after all backups complete
+- Logs progress to `backups/backup_log.txt`
 
 ## Repository contents
 
-- `backup-download-shutdown.bat` — Main Windows batch script (optional remote shutdown via flag).
-- `backup-download-no-shutdown.bat` — Wrapper that always skips remote shutdown.
-- `backup-user.sh` — Linux-side helper to provision a restricted backup user with minimal sudo rights.
-- `backups/` — Destination for downloaded backup files; contains `backup_log.txt`.
-- `tools/` — Holds `plink.exe` and `pscp.exe` after first run (auto-downloaded if missing).
- - `setup-backup-user.bat` — Windows CMD helper that uploads and runs `backup-user.sh` remotely as root.
+**Main Scripts (Multi-Instance):**
+- `backup-all-instances.bat` — Backup ALL enabled instances and shut down server
+- `backup-all-instances-no-shutdown.bat` — Backup ALL enabled instances WITHOUT shutdown
+
+**Legacy Scripts (Single Instance):**
+- `backup-download-shutdown.bat` — Single instance backup with optional shutdown
+- `backup-download-no-shutdown.bat` — Single instance backup without shutdown
+
+**Setup Helpers:**
+- `backup-user.sh` — Linux-side helper to provision a restricted backup user with minimal sudo rights
+- `setup-backup-user.bat` — Windows CMD helper that uploads and runs `backup-user.sh` remotely as root
+
+**Folders:**
+- `backups/` — Destination for downloaded backup files organized by instance; contains `backup_log.txt`
+- `tools/` — Holds `plink.exe` and `pscp.exe` after first run (auto-downloaded if missing)
 
 ## Prerequisites
 
@@ -33,28 +44,43 @@ This repository provides Windows batch scripts that connect to a remote Koha ser
 
 You can configure via a `config.txt` file placed next to the script (preferred), or by editing the script defaults.
 
-1) Using `config.txt` (recommended)
+**Using `config.txt` (recommended):**
 
 - Copy `config.txt.example` to `config.txt` and edit values.
 - Supported keys (key=value):
-  - `USERNAME` — Remote Linux username (e.g., `backup`).
-  - `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes).
-  - `IP` — IP address or hostname of the Koha server.
-  - `INSTANCE` — Koha instance name, used to build the default remote backup path.
-  - `KOHA_BACKUP_PATH` — Optional explicit remote path (overrides instance-based path).
-    - Ensure this matches your Koha install; e.g., `/var/spool/koha/<instance>` on Debian-based installs.
-  - `HOST_FINGERPRINT` — Server host key fingerprint (PuTTY format) used by plink/pscp.
-  - `RETENTION_FILES` — How many `.tar.gz` files to keep in `backups/` (default 30).
-  - `NO_SHUTDOWN` — 0 or 1; if 1, skip remote shutdown (CLI `--no-shutdown` overrides).
-  - `PLINK_URL`, `PSCP_URL` — Optional override URLs for PuTTY tools.
+  - `USERNAME` — Remote Linux username (e.g., `backup`)
+  - `PASSWORD` — Password for the user (omit if switching to key-based auth; see Security notes)
+  - `IP` — IP address or hostname of the Koha server
+  - `HOST_FINGERPRINT` — Server host key fingerprint (PuTTY format) used by plink/pscp
+  - `RETENTION_FILES` — How many `.tar.gz` files to keep per instance (default 30)
 
-2) Editing the script (fallback)
-
-- Open `backup-download-shutdown.bat` and update the default variables near the top.
+**Note:** The new multi-instance scripts (`backup-all-instances*.bat`) automatically discover all enabled Koha instances, so you don't need to configure `INSTANCE` or `KOHA_BACKUP_PATH` anymore.
 
 The script writes logs to `backups/backup_log.txt`. The PuTTY tools will be placed in `tools/` upon first run if missing.
 
 ## Usage
+
+### Multi-Instance Backup (Recommended)
+
+Backup ALL enabled instances and shut down server:
+
+```powershell
+& '.\backup-all-instances.bat'
+```
+
+Backup ALL enabled instances WITHOUT shutdown:
+
+```powershell
+& '.\backup-all-instances-no-shutdown.bat'
+```
+
+**Folder Structure:**
+- Backups are organized by instance: `backups\ils\`, `backups\library\`, etc.
+- Each instance keeps its own retention count (e.g., 30 newest `.tar.gz` files)
+
+### Single Instance Backup (Legacy)
+
+For backward compatibility, the original single-instance scripts are still available.
 
 Dry-run (no remote actions):
 
@@ -72,12 +98,6 @@ Skip remote shutdown explicitly:
 
 ```powershell
 & '.\\backup-download-shutdown.bat' --no-shutdown
-```
-
-Combine options:
-
-```powershell
-& '.\\backup-download-shutdown.bat' test --no-shutdown
 ```
 
 Outputs:

@@ -3,9 +3,10 @@
 
 # Ignore downloaded tools and backup artifacts
 /tools/
-/backups/*.tar.gz
-/backups/*.sql.gz
+/backups/**/*.tar.gz
+/backups/**/*.sql.gz
 /backups/backup_log.txt
+/backups/*/
 
 # macOS and Windows junk
 .DS_Store

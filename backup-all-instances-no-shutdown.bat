@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-REM Koha ALL instances backup and download with shutdown
+REM Koha ALL instances backup and download WITHOUT shutdown
 REM Discovers all enabled instances via "koha-list --enabled" and downloads backups for each
 
 SET SCRIPT_DIR=%~dp0
@@ -48,14 +48,18 @@ if not exist "%PSCP%" (
     powershell -Command "Invoke-WebRequest -Uri 'https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe' -OutFile '%PSCP%'"
 )
 
-echo [%date% %time%] === Koha ALL instances backup with shutdown === >> "%LOG_FILE%"
-echo Starting Koha backup for all enabled instances...
+echo [%date% %time%] === Koha ALL instances backup (no shutdown) === >> "%LOG_FILE%"
+echo Starting Koha backup for all enabled instances (no shutdown)...
 
 REM Discover enabled instances
 echo Discovering enabled Koha instances...
+echo [%date% %time%] Running: plink -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% koha-list --enabled >> "%LOG_FILE%"
 "%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "koha-list --enabled" > "%TEMP%\instances.txt" 2>&1
 if errorlevel 1 (
     echo ERROR: Failed to discover instances
+    echo. >> "%LOG_FILE%"
+    echo [%date% %time%] ERROR: koha-list command failed >> "%LOG_FILE%"
+    type "%TEMP%\instances.txt" >> "%LOG_FILE%"
     type "%TEMP%\instances.txt"
     exit /b 1
 )
@@ -66,12 +70,8 @@ for /f "usebackq delims=" %%I in ("%TEMP%\instances.txt") do (
 )
 del "%TEMP%\instances.txt"
 
-REM Shutdown server
-echo Shutting down server...
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo /sbin/shutdown now"
-echo [%date% %time%] Shutdown command sent >> "%LOG_FILE%"
-
 echo.
+echo [%date% %time%] Backup completed (no shutdown). >> "%LOG_FILE%"
 echo Backup completed. See log: %LOG_FILE%
 exit /b 0
 
