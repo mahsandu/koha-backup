@@ -160,9 +160,9 @@ for /f "usebackq delims=" %%I in ("%TMP_INSTANCES%") do (
     )
     
     set "LATEST_BACKUP1="
-    for /f "usebackq delims=" %%f in ("!TMP_LATEST!") do (
-        echo %%f | findstr /i "\.tar\.gz \.sql\.gz" >nul
-        if !ERRORLEVEL! EQU 0 if not defined LATEST_BACKUP1 set "LATEST_BACKUP1=%%f"
+    for /f "usebackq delims=" %%F in ("!TMP_LATEST!") do (
+        echo %%F | findstr /i "\.tar\.gz \.sql\.gz" >nul
+        if !ERRORLEVEL! EQU 0 if not defined LATEST_BACKUP1 set "LATEST_BACKUP1=%%F"
     )
     if exist "!TMP_LATEST!" del "!TMP_LATEST!"
     
@@ -218,14 +218,14 @@ for /f "usebackq delims=" %%I in ("%TMP_INSTANCES%") do (
     set /a count=0
     set "LATEST_BACKUP1="
     set "LATEST_BACKUP2="
-    for /f "usebackq delims=" %%f in ("!TMP_LATEST!") do (
-        echo %%f | findstr /i "\.tar\.gz \.sql\.gz" >nul
+    for /f "usebackq delims=" %%F in ("!TMP_LATEST!") do (
+        echo %%F | findstr /i "\.tar\.gz \.sql\.gz" >nul
         if !ERRORLEVEL! EQU 0 (
             set /a count+=1
-            if !count! EQU 1 set "LATEST_BACKUP1=%%f"
-            if !count! EQU 2 set "LATEST_BACKUP2=%%f"
+            if !count! EQU 1 set "LATEST_BACKUP1=%%F"
+            if !count! EQU 2 set "LATEST_BACKUP2=%%F"
         ) else (
-            echo [%date% %time%] !INSTANCE!: Ignoring non-backup line: %%f >> "%LOG_FILE%"
+            echo [%date% %time%] !INSTANCE!: Ignoring non-backup line: %%F >> "%LOG_FILE%"
         )
     )
     if exist "!TMP_LATEST!" del "!TMP_LATEST!"
@@ -268,9 +268,9 @@ for /f "usebackq delims=" %%I in ("%TMP_INSTANCES%") do (
     
     REM Cleanup old backups for this instance - keep only RETENTION_FILES newest .tar.gz
     echo [%date% %time%] !INSTANCE!: Cleaning old backups (keeping %RETENTION_FILES%)... >> "%LOG_FILE%"
-    for /f "skip=%RETENTION_FILES% delims=" %%f in ('dir "!BACKUP_FOLDER!" /b /a-d /o-d 2^>nul ^| findstr /i ".tar.gz"') do (
-        echo [%date% %time%] !INSTANCE!: Deleting %%f >> "%LOG_FILE%"
-        del "!BACKUP_FOLDER!\%%f"
+    for /f "skip=%RETENTION_FILES% delims=" %%F in ('dir "!BACKUP_FOLDER!" /b /a-d /o-d 2^>nul ^| findstr /i ".tar.gz"') do (
+        echo [%date% %time%] !INSTANCE!: Deleting %%F >> "%LOG_FILE%"
+        del "!BACKUP_FOLDER!\%%F"
     )
     
     :next_instance
