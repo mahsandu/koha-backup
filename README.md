@@ -1,5 +1,9 @@
 # Koha Backup, Download, and Optional Shutdown (Windows)
 
+![Overview hero](assets/linkedin-hero-placeholder.svg)
+
+> Release notes: See [CHANGELOG.md](CHANGELOG.md). Full walkthrough: [USER-GUIDE.md](USER-GUIDE.md).
+
 This repository provides Windows batch scripts that connect to a remote Koha server over SSH, automatically discover all enabled Koha instances, run backups, and download them to your Windows machine. Optionally shuts down the remote server after completion.
 
 ## What it does

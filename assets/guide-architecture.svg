@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Flow diagram: Windows runs scripts, secures SSH to Koha, runs backups, stages files, downloads to local backups, applies retention.">
+  <defs>
+    <style>
+      .box { fill:#ffffff; stroke:#94a3b8; stroke-width:2; rx:12; ry:12; }
+      .title { font: 700 26px 'Segoe UI', Arial, sans-serif; fill:#111827; }
+      .label { font: 600 20px 'Segoe UI', Arial, sans-serif; fill:#111827; }
+      .sub { font: 16px 'Segoe UI', Arial, sans-serif; fill:#374151; }
+      .note { font: 15px 'Segoe UI', Arial, sans-serif; fill:#111827; }
+      .accent { fill:#10B981; }
+      .arrow { stroke:#10B981; stroke-width:3; marker-end:url(#arrowhead); }
+      .arrow2 { stroke:#2563EB; stroke-width:3; marker-end:url(#arrowhead2); }
+      .badge { fill:#ECFDF5; stroke:#10B981; stroke-width:1.5; rx:10; ry:10; }
+      .chip { fill:#EEF2FF; stroke:#6366F1; stroke-width:1.5; rx:8; ry:8; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#10B981" />
+    </marker>
+    <marker id="arrowhead2" markerWidth="10" markerHeight="10" refX="10" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#2563EB" />
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="#F8FAFC" />
+  <text x="800" y="70" text-anchor="middle" class="title">Koha Backup Flow (Windows → SSH → Koha → Local backups)</text>
+
+  <!-- Windows box -->
+  <rect class="box" x="80" y="140" width="420" height="200" />
+  <text x="290" y="175" text-anchor="middle" class="label">Windows Client (.bat)</text>
+  <text x="100" y="210" class="sub">• plink.exe, pscp.exe</text>
+  <text x="100" y="238" class="sub">• config.txt (USERNAME, PASSWORD, IP)</text>
+  <text x="100" y="266" class="sub">• Modes: No‑Shutdown / With‑Shutdown</text>
+
+  <!-- SSH badge between -->
+  <rect class="badge" x="545" y="190" width="200" height="100" />
+  <text x="645" y="225" text-anchor="middle" class="label">SSH</text>
+  <text x="645" y="250" text-anchor="middle" class="sub">TOFU host key verify</text>
+
+  <!-- Koha server box -->
+  <rect class="box" x="790" y="140" width="420" height="200" />
+  <text x="1000" y="175" text-anchor="middle" class="label">Koha Server (Linux)</text>
+  <text x="810" y="210" class="sub">• koha-list --enabled</text>
+  <text x="810" y="238" class="sub">• koha-run-backups &lt;instance&gt;</text>
+  <text x="810" y="266" class="sub">• /var/spool/koha/&lt;instance&gt;/</text>
+
+  <!-- /tmp staging -->
+  <rect class="box" x="1240" y="140" width="280" height="200" />
+  <text x="1380" y="175" text-anchor="middle" class="label">/tmp staging</text>
+  <text x="1260" y="210" class="sub">• cp from /var/spool/koha</text>
+  <text x="1260" y="238" class="sub">• chmod 644</text>
+
+  <!-- Local backups box -->
+  <rect class="box" x="540" y="440" width="520" height="220" />
+  <text x="800" y="475" text-anchor="middle" class="label">Local backups (Windows)</text>
+  <text x="560" y="510" class="sub">• backups/&lt;instance&gt;/*.tar.gz</text>
+  <text x="560" y="538" class="sub">• backups/&lt;instance&gt;/*.sql.gz</text>
+  <rect class="chip" x="560" y="568" width="420" height="36" />
+  <text x="770" y="592" text-anchor="middle" class="note">Retention: keep N newest .tar.gz (default 30)</text>
+
+  <!-- Arrows top row A->SSH->Koha->/tmp -->
+  <line x1="500" y1="240" x2="545" y2="240" class="arrow" />
+  <line x1="745" y1="240" x2="790" y2="240" class="arrow" />
+  <line x1="1210" y1="240" x2="1240" y2="240" class="arrow" />
+
+  <!-- Download arrow from /tmp back down to Local backups -->
+  <path d="M 1380 340 C 1380 400, 1200 430, 1060 460" fill="none" class="arrow2" />
+
+  <!-- Legend chips -->
+  <rect class="chip" x="80" y="380" width="280" height="36" />
+  <text x="220" y="404" text-anchor="middle" class="note">DB + Files: .sql.gz + .tar.gz</text>
+  <rect class="chip" x="380" y="380" width="240" height="36" />
+  <text x="500" y="404" text-anchor="middle" class="note">Auto‑discover instances</text>
+  <rect class="chip" x="640" y="380" width="280" height="36" />
+  <text x="780" y="404" text-anchor="middle" class="note">TOFU host key verification</text>
+
+  <!-- Footer caption -->
+  <text x="1550" y="880" text-anchor="end" class="sub" fill="#6B7280">koha-backup (Windows) — github.com/mahsandu/koha-backup</text>
+</svg>

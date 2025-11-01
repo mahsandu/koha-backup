@@ -1,0 +1,59 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='627' viewBox='0 0 1200 627' role='img' aria-label='LinkedIn hero: Koha Backup for Windows'>
+  <defs>
+    <style>
+      .bg{fill:#FFFFFF}
+      .l{fill:#111827}
+      .sub{fill:#374151}
+      .title{font:700 50px Segoe UI, Arial}
+      .subtitle{font:600 26px Segoe UI, Arial}
+      .bullet{font:500 22px Segoe UI, Arial}
+      .chip{fill:#EEF2FF;stroke:#6366F1;stroke-width:2;rx:12;ry:12}
+      .chiptext{font:600 20px Segoe UI, Arial; fill:#3730A3}
+      .box{fill:#ffffff;stroke:#CBD5E1;stroke-width:2;rx:12;ry:12}
+      .arrow{stroke:#0EA5A4;stroke-width:3;marker-end:url(#a)}
+    </style>
+    <marker id='a' markerWidth='10' markerHeight='10' refX='10' refY='3' orient='auto'>
+      <polygon points='0 0, 10 3, 0 6' fill='#0EA5A4'/>
+    </marker>
+  </defs>
+  <rect width='1200' height='627' class='bg'/>
+
+  <!-- Left text panel -->
+  <g transform='translate(60,80)'>
+    <text x='0' y='0' class='title'>Koha Backup for Windows</text>
+    <text x='0' y='44' class='subtitle'>Automated, multi-instance, non-technical friendly</text>
+    <g class='sub'>
+      <text x='0' y='100' class='bullet'>• Auto-discovers all instances</text>
+      <text x='0' y='135' class='bullet'>• DB + files (.sql.gz + .tar.gz)</text>
+      <text x='0' y='170' class='bullet'>• Retention policy (keep 30)</text>
+      <text x='0' y='205' class='bullet'>• Host key verification (TOFU), logging</text>
+    </g>
+    <rect x='0' y='240' width='480' height='44' class='chip'/>
+    <text x='240' y='270' text-anchor='middle' class='chiptext'>Two modes: No‑Shutdown / With‑Shutdown</text>
+  </g>
+
+  <!-- Right flow -->
+  <g transform='translate(610,120)'>
+    <rect x='0' y='0' width='200' height='140' class='box'/>
+    <text x='100' y='36' text-anchor='middle' class='subtitle'>Windows</text>
+    <text x='100' y='68' text-anchor='middle' class='sub'>Run .bat</text>
+
+    <line x1='200' y1='70' x2='240' y2='70' class='arrow'/>
+
+    <rect x='240' y='0' width='220' height='140' class='box'/>
+    <text x='350' y='36' text-anchor='middle' class='subtitle'>Secure SSH</text>
+    <text x='350' y='68' text-anchor='middle' class='sub'>(TOFU)</text>
+
+    <line x1='460' y1='70' x2='500' y2='70' class='arrow'/>
+
+    <rect x='500' y='0' width='220' height='140' class='box'/>
+    <text x='610' y='36' text-anchor='middle' class='subtitle'>Koha Server</text>
+    <text x='610' y='68' text-anchor='middle' class='sub'>koha-run-backups</text>
+
+    <line x1='610' y1='140' x2='610' y2='230' class='arrow'/>
+
+    <rect x='380' y='230' width='320' height='120' class='box'/>
+    <text x='540' y='265' text-anchor='middle' class='subtitle'>Local backups</text>
+    <text x='540' y='295' text-anchor='middle' class='sub'>backups/&lt;instance&gt;/.sql.gz + .tar.gz</text>
+  </g>
+</svg>

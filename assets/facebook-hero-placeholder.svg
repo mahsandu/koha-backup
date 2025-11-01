@@ -1,0 +1,58 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='630' viewBox='0 0 1200 630' role='img' aria-label='Facebook hero: Koha Backup for Windows'>
+  <defs>
+    <style>
+      .bg{fill:#F5F7FA}
+      .card{fill:#ffffff;stroke:#D1D5DB;stroke-width:2;rx:20;ry:20}
+      .title{font:700 56px Segoe UI, Arial; fill:#1F2937}
+      .sub{font:500 28px Segoe UI, Arial; fill:#374151}
+      .chip{fill:#E5F7F1;stroke:#10B981;stroke-width:2;rx:16;ry:16}
+      .chiptext{font:600 22px Segoe UI, Arial; fill:#065F46}
+      .label{font:600 22px Segoe UI, Arial; fill:#111827}
+      .box{fill:#ffffff;stroke:#94A3B8;stroke-width:2;rx:12;ry:12}
+      .arrow{stroke:#10B981;stroke-width:3;marker-end:url(#a)}
+    </style>
+    <marker id='a' markerWidth='10' markerHeight='10' refX='10' refY='3' orient='auto'>
+      <polygon points='0 0, 10 3, 0 6' fill='#10B981'/>
+    </marker>
+  </defs>
+  <rect width='1200' height='630' class='bg'/>
+  <text x='600' y='110' text-anchor='middle' class='title'>Koha Backup for Windows</text>
+  <text x='600' y='155' text-anchor='middle' class='sub'>One-click backups for all Koha instances</text>
+
+  <g transform='translate(100,210)'>
+    <rect x='0' y='0' width='280' height='160' class='box'/>
+    <text x='140' y='36' text-anchor='middle' class='label'>Run .bat</text>
+    <text x='140' y='70' text-anchor='middle' class='sub'>Windows PC</text>
+
+    <line x1='280' y1='80' x2='330' y2='80' class='arrow'/>
+
+    <rect x='330' y='0' width='280' height='160' class='box'/>
+    <text x='470' y='36' text-anchor='middle' class='label'>Secure SSH</text>
+    <text x='470' y='70' text-anchor='middle' class='sub'>(TOFU)</text>
+
+    <line x1='610' y1='80' x2='660' y2='80' class='arrow'/>
+
+    <rect x='660' y='0' width='280' height='160' class='box'/>
+    <text x='800' y='36' text-anchor='middle' class='label'>Koha Server</text>
+    <text x='800' y='70' text-anchor='middle' class='sub'>koha-run-backups</text>
+
+    <line x1='800' y1='160' x2='800' y2='250' class='arrow'/>
+  </g>
+
+  <g transform='translate(360,350)'>
+    <rect x='0' y='0' width='480' height='120' class='card'/>
+    <text x='240' y='46' text-anchor='middle' class='label'>Downloads → backups/&lt;instance&gt;/</text>
+    <text x='240' y='80' text-anchor='middle' class='sub'>.sql.gz + .tar.gz • keep last 30</text>
+  </g>
+
+  <g transform='translate(160,520)'>
+    <rect x='0' y='0' width='260' height='44' class='chip'/>
+    <text x='130' y='30' text-anchor='middle' class='chiptext'>Auto-discover instances</text>
+    <rect x='280' y='0' width='280' height='44' class='chip'/>
+    <text x='420' y='30' text-anchor='middle' class='chiptext'>DB + files (.sql.gz + .tar.gz)</text>
+    <rect x='580' y='0' width='220' height='44' class='chip'/>
+    <text x='690' y='30' text-anchor='middle' class='chiptext'>Retention: keep 30</text>
+  </g>
+
+  <text x='1120' y='600' text-anchor='end' class='sub'>No‑Shutdown • With‑Shutdown</text>
+</svg>

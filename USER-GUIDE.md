@@ -2,6 +2,8 @@
 
 ## 🗺️ Illustrated Overview
 
+![Koha backup flow diagram](assets/guide-architecture.svg)
+
 ### At-a-glance: what you do
 - Create a restricted “backup” user on the Koha server (one-time)
 - Put 3 values in config.txt (USERNAME, PASSWORD, IP)
