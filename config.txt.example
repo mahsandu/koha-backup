@@ -1,35 +1,15 @@
-# Configuration for Koha backup scripts (key=value)
-# Copy to config.txt and adjust values as needed.
-# Lines starting with # or ; are comments.
+# Configuration for Koha backup scripts
+# Copy this file to config.txt and adjust values as needed
+# Lines starting with # are comments
 
-# ===== Required Settings =====
-
-# Remote host/user credentials
+# Remote server credentials
 USERNAME=backup
-PASSWORD=backup@12345
+PASSWORD=your_password_here
 IP=10.10.10.10
 
-# SSH host key fingerprint (PuTTY format) to enforce in batch mode
-# Get this from the server with: ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub
-HOST_FINGERPRINT=SHA256:zkRgpJmh+WcUyVvUonvhXTDZJVL5iIHlxDrfcY2RbQk
+# SSH host key fingerprint (leave blank to auto-discover on first run)
+# Or get from server: ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub
+HOST_FINGERPRINT=
 
-# ===== Optional Settings =====
-
-# Retention count for .tar.gz files per instance (default 30)
+# Number of backup files to keep per instance (older files are deleted)
 RETENTION_FILES=30
-
-# ===== Legacy Single-Instance Scripts Only =====
-# These settings are only used by backup-download-shutdown.bat (not the multi-instance scripts)
-
-# Koha instance name (used if KOHA_BACKUP_PATH is not set)
-INSTANCE=ils
-
-# Optional explicit backup path on the server; if not set, defaults to /var/spool/koha/<instance>
-# KOHA_BACKUP_PATH=/var/spool/koha/ils
-
-# Whether to skip remote shutdown (0 or 1). CLI flags --no-shutdown/no-shutdown override this.
-NO_SHUTDOWN=0
-
-# Override download URLs for PuTTY tools if needed
-# PLINK_URL=https://the.earth.li/~sgtatham/putty/latest/w32/plink.exe
-# PSCP_URL=https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe

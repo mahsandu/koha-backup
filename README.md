@@ -18,17 +18,18 @@ This repository provides Windows batch scripts that connect to a remote Koha ser
 
 ## Repository contents
 
-**Main Scripts (Multi-Instance):**
-- `backup-all-instances.bat` — Backup ALL enabled instances and shut down server
-- `backup-all-instances-no-shutdown.bat` — Backup ALL enabled instances WITHOUT shutdown
+**Backup Scripts:**
 
-**Legacy Scripts (Single Instance):**
-- `backup-download-shutdown.bat` — Single instance backup with optional shutdown
-- `backup-download-no-shutdown.bat` — Single instance backup without shutdown
+*With Server Shutdown:*
+- `backup-all-instances.bat` — Backup ALL enabled instances, then shut down the server
+
+*Without Server Shutdown:*
+- `backup-all-instances-no-shutdown.bat` — Backup ALL enabled instances, keep server running
 
 **Setup Helpers:**
-- `backup-user.sh` — Linux-side helper to provision a restricted backup user with minimal sudo rights
-- `setup-backup-user.bat` — Windows CMD helper that uploads and runs `backup-user.sh` remotely as root
+- `backup-user.sh` — Linux-side script to provision a restricted backup user with minimal sudo rights
+- `setup-backup-user.bat` — Windows helper that uploads and runs `backup-user.sh` remotely as root
+- `build-exe.ps1` — PowerShell script to package .bat files as .exe using IExpress (see `build-exe.md`)
 
 **Folders:**
 - `backups/` — Destination for downloaded backup files organized by instance; contains `backup_log.txt`
@@ -60,50 +61,28 @@ The script writes logs to `backups/backup_log.txt`. The PuTTY tools will be plac
 
 ## Usage
 
-### Multi-Instance Backup (Recommended)
+### Backup ALL Instances
 
-Backup ALL enabled instances and shut down server:
-
+**With Server Shutdown:**
 ```powershell
 & '.\backup-all-instances.bat'
 ```
+- Discovers all enabled Koha instances automatically
+- Runs backups for each instance
+- Downloads `.tar.gz` and `.sql.gz` files
+- Shuts down the server after completion
 
-Backup ALL enabled instances WITHOUT shutdown:
-
+**Without Server Shutdown:**
 ```powershell
 & '.\backup-all-instances-no-shutdown.bat'
 ```
+- Same as above, but keeps the server running
 
 **Folder Structure:**
-- Backups are organized by instance: `backups\ils\`, `backups\library\`, etc.
-- Each instance keeps its own retention count (e.g., 30 newest `.tar.gz` files)
-
-### Single Instance Backup (Legacy)
-
-For backward compatibility, the original single-instance scripts are still available.
-
-Dry-run (no remote actions):
-
-```powershell
-& '.\\backup-download-shutdown.bat' test
-```
-
-Real run (performs backup if needed, downloads files, may shut down remote):
-
-```powershell
-& '.\\backup-download-shutdown.bat'
-```
-
-Skip remote shutdown explicitly:
-
-```powershell
-& '.\\backup-download-shutdown.bat' --no-shutdown
-```
-
-Outputs:
-
-- Downloads saved in `backups/`
-- Log file at `backups/backup_log.txt`
+- Backups organized by instance: `backups\library\`, `backups\catalog\`, etc.
+- Each instance folder contains its `.tar.gz` and `.sql.gz` files
+- Retention: keeps 30 newest `.tar.gz` files per instance (configurable via `RETENTION_FILES`)
+- Log file: `backups\backup_log.txt`
 
 ## Linux-side: provision the backup user
 

@@ -5,9 +5,11 @@ REM Koha ALL instances backup and download with shutdown
 REM Discovers all enabled instances via "koha-list --enabled" and downloads backups for each
 
 SET SCRIPT_DIR=%~dp0
-SET TOOLS_DIR=%SCRIPT_DIR%tools
-SET BACKUP_ROOT=%SCRIPT_DIR%backups
+SET ROOT_DIR=%SCRIPT_DIR%..
+SET TOOLS_DIR=%ROOT_DIR%\tools
+SET BACKUP_ROOT=%ROOT_DIR%\backups
 SET LOG_FILE=%BACKUP_ROOT%\backup_log.txt
+SET CONFIG_FILE=%ROOT_DIR%\config.txt
 
 REM Load config
 SET USERNAME=backup
@@ -16,8 +18,8 @@ SET IP=10.10.10.10
 SET HOST_FINGERPRINT=
 SET RETENTION_FILES=30
 
-if exist "%SCRIPT_DIR%config.txt" (
-    for /f "usebackq tokens=1,* delims==" %%A in ("%SCRIPT_DIR%config.txt") do (
+if exist "%CONFIG_FILE%" (
+    for /f "usebackq tokens=1,* delims==" %%A in ("%CONFIG_FILE%") do (
         set "line=%%A"
         REM Skip comment lines
         if not "!line:~0,1!"=="#" if not "!line:~0,1!"==";" (
@@ -34,9 +36,15 @@ if exist "%SCRIPT_DIR%config.txt" (
 
 SET PLINK=%TOOLS_DIR%\plink.exe
 SET PSCP=%TOOLS_DIR%\pscp.exe
+SET "HOSTKEY_ARG="
+if not "%HOST_FINGERPRINT%"=="" set "HOSTKEY_ARG=-hostkey %HOST_FINGERPRINT%"
 
 if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
 if not exist "%BACKUP_ROOT%" mkdir "%BACKUP_ROOT%"
+
+REM Ensure host key is discovered
+call :ensure_putty_hostkey
+if not "%HOST_FINGERPRINT%"=="" set "HOSTKEY_ARG=-hostkey %HOST_FINGERPRINT%"
 
 REM Download tools if missing
 if not exist "%PLINK%" (
@@ -53,7 +61,7 @@ echo Starting Koha backup for all enabled instances...
 
 REM Discover enabled instances
 echo Discovering enabled Koha instances...
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "koha-list --enabled" > "%TEMP%\instances.txt" 2>&1
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "koha-list --enabled" > "%TEMP%\instances.txt" 2>&1
 if errorlevel 1 (
     echo ERROR: Failed to discover instances
     type "%TEMP%\instances.txt"
@@ -68,7 +76,7 @@ del "%TEMP%\instances.txt"
 
 REM Shutdown server
 echo Shutting down server...
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo /sbin/shutdown now"
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "sudo /sbin/shutdown now"
 echo [%date% %time%] Shutdown command sent >> "%LOG_FILE%"
 
 echo.
@@ -89,14 +97,14 @@ if not exist "%BACKUP_FOLDER%" mkdir "%BACKUP_FOLDER%"
 
 REM Run backup
 echo Running backup for %INST%...
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo /usr/sbin/koha-run-backups %INST%" >> "%LOG_FILE%" 2>&1
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "sudo /usr/sbin/koha-run-backups %INST%" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
     echo WARNING: Backup command failed for %INST%
     goto :eof
 )
 
 REM Get latest 2 backup files
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "ls -t %REMOTE_PATH% | head -2" > "%TEMP%\files_%INST%.txt" 2>&1
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "ls -t %REMOTE_PATH% | head -2" > "%TEMP%\files_%INST%.txt" 2>&1
 
 REM Download each backup file
 for /f "usebackq delims=" %%F in ("%TEMP%\files_%INST%.txt") do (
@@ -104,8 +112,8 @@ for /f "usebackq delims=" %%F in ("%TEMP%\files_%INST%.txt") do (
     echo !FNAME! | findstr /i ".gz" >nul
     if !ERRORLEVEL! EQU 0 (
         echo Downloading !FNAME!...
-        "%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo cp %REMOTE_PATH%/!FNAME! /tmp/!FNAME! && sudo chmod 644 /tmp/!FNAME!" >> "%LOG_FILE%" 2>&1
-        "%PSCP%" -batch -hostkey %HOST_FINGERPRINT% -pw %PASSWORD% %USERNAME%@%IP%:/tmp/!FNAME! "%BACKUP_FOLDER%\" >> "%LOG_FILE%" 2>&1
+        "%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "sudo cp %REMOTE_PATH%/!FNAME! /tmp/!FNAME! && sudo chmod 644 /tmp/!FNAME!" >> "%LOG_FILE%" 2>&1
+        "%PSCP%" -batch %HOSTKEY_ARG% -pw %PASSWORD% %USERNAME%@%IP%:/tmp/!FNAME! "%BACKUP_FOLDER%" >> "%LOG_FILE%" 2>&1
         if exist "%BACKUP_FOLDER%\!FNAME!" (
             echo   Downloaded: !FNAME!
         ) else (
@@ -121,4 +129,34 @@ for /f "skip=%RETENTION_FILES% delims=" %%F in ('dir "%BACKUP_FOLDER%" /b /a-d /
     echo [%date% %time%] %INST%: Deleted old backup %%F >> "%LOG_FILE%"
 )
 
+goto :eof
+
+
+:ensure_putty_hostkey
+REM Check if HOST_FINGERPRINT is already set
+if not "%HOST_FINGERPRINT%"=="" goto :eof
+
+echo Discovering SSH host key fingerprint (first time only)...
+REM Use plink in verbose mode to capture host key, pipe stderr to stdout
+set "TEMPFP=%TEMP%\fingerprint_ai.txt"
+"%PLINK%" -v -batch -ssh %USERNAME%@%IP% -pw %PASSWORD% exit 2>&1 | findstr /c:"SHA256:" > "%TEMPFP%"
+
+REM Extract the fingerprint from verbose output
+for /f "tokens=2 delims=: " %%A in ('findstr /c:"SHA256:" "%TEMPFP%"') do (
+    for /f "tokens=1" %%B in ("%%A") do (
+        set "HOST_FINGERPRINT=SHA256:%%B"
+        echo Discovered fingerprint: SHA256:%%B
+        goto :__found_fp_ai
+    )
+)
+
+:__no_fp_ai
+echo WARNING: Could not auto-discover host key fingerprint
+echo Please add HOST_FINGERPRINT=... to config.txt manually
+del "%TEMPFP%" 2>nul
+goto :eof
+
+:__found_fp_ai
+REM Cleanup temp file
+del "%TEMPFP%" 2>nul
 goto :eof

@@ -5,9 +5,11 @@ REM Koha ALL instances backup and download WITHOUT shutdown
 REM Discovers all enabled instances via "koha-list --enabled" and downloads backups for each
 
 SET SCRIPT_DIR=%~dp0
-SET TOOLS_DIR=%SCRIPT_DIR%tools
-SET BACKUP_ROOT=%SCRIPT_DIR%backups
+SET ROOT_DIR=%SCRIPT_DIR%..
+SET TOOLS_DIR=%ROOT_DIR%\tools
+SET BACKUP_ROOT=%ROOT_DIR%\backups
 SET LOG_FILE=%BACKUP_ROOT%\backup_log.txt
+SET CONFIG_FILE=%ROOT_DIR%\config.txt
 
 REM Load config
 SET USERNAME=backup
@@ -16,8 +18,8 @@ SET IP=10.10.10.10
 SET HOST_FINGERPRINT=
 SET RETENTION_FILES=30
 
-if exist "%SCRIPT_DIR%config.txt" (
-    for /f "usebackq tokens=1,* delims==" %%A in ("%SCRIPT_DIR%config.txt") do (
+if exist "%CONFIG_FILE%" (
+    for /f "usebackq tokens=1,* delims==" %%A in ("%CONFIG_FILE%") do (
         set "line=%%A"
         REM Skip comment lines
         if not "!line:~0,1!"=="#" if not "!line:~0,1!"==";" (
@@ -34,6 +36,8 @@ if exist "%SCRIPT_DIR%config.txt" (
 
 SET PLINK=%TOOLS_DIR%\plink.exe
 SET PSCP=%TOOLS_DIR%\pscp.exe
+SET "HOSTKEY_ARG="
+if not "%HOST_FINGERPRINT%"=="" set "HOSTKEY_ARG=-hostkey %HOST_FINGERPRINT%"
 
 if not exist "%TOOLS_DIR%" mkdir "%TOOLS_DIR%"
 if not exist "%BACKUP_ROOT%" mkdir "%BACKUP_ROOT%"
@@ -48,13 +52,17 @@ if not exist "%PSCP%" (
     powershell -Command "Invoke-WebRequest -Uri 'https://the.earth.li/~sgtatham/putty/latest/w32/pscp.exe' -OutFile '%PSCP%'"
 )
 
+REM Attempt to auto-discover/verify host fingerprint (TOFU) so batch mode won't fail
+call :ensure_putty_hostkey
+if not "%HOST_FINGERPRINT%"=="" set "HOSTKEY_ARG=-hostkey %HOST_FINGERPRINT%"
+
 echo [%date% %time%] === Koha ALL instances backup (no shutdown) === >> "%LOG_FILE%"
 echo Starting Koha backup for all enabled instances (no shutdown)...
 
 REM Discover enabled instances
 echo Discovering enabled Koha instances...
-echo [%date% %time%] Running: plink -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% koha-list --enabled >> "%LOG_FILE%"
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "koha-list --enabled" > "%TEMP%\instances.txt" 2>&1
+echo [%date% %time%] Running: plink -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% koha-list --enabled >> "%LOG_FILE%"
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "koha-list --enabled" > "%TEMP%\instances.txt" 2>&1
 if errorlevel 1 (
     echo ERROR: Failed to discover instances
     echo. >> "%LOG_FILE%"
@@ -89,14 +97,14 @@ if not exist "%BACKUP_FOLDER%" mkdir "%BACKUP_FOLDER%"
 
 REM Run backup
 echo Running backup for %INST%...
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo /usr/sbin/koha-run-backups %INST%" >> "%LOG_FILE%" 2>&1
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "sudo /usr/sbin/koha-run-backups %INST%" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
     echo WARNING: Backup command failed for %INST%
     goto :eof
 )
 
 REM Get latest 2 backup files
-"%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "ls -t %REMOTE_PATH% | head -2" > "%TEMP%\files_%INST%.txt" 2>&1
+"%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "ls -t %REMOTE_PATH% | head -2" > "%TEMP%\files_%INST%.txt" 2>&1
 
 REM Download each backup file
 for /f "usebackq delims=" %%F in ("%TEMP%\files_%INST%.txt") do (
@@ -104,8 +112,8 @@ for /f "usebackq delims=" %%F in ("%TEMP%\files_%INST%.txt") do (
     echo !FNAME! | findstr /i ".gz" >nul
     if !ERRORLEVEL! EQU 0 (
         echo Downloading !FNAME!...
-        "%PLINK%" -batch -ssh -hostkey %HOST_FINGERPRINT% %USERNAME%@%IP% -pw %PASSWORD% "sudo cp %REMOTE_PATH%/!FNAME! /tmp/!FNAME! && sudo chmod 644 /tmp/!FNAME!" >> "%LOG_FILE%" 2>&1
-        "%PSCP%" -batch -hostkey %HOST_FINGERPRINT% -pw %PASSWORD% %USERNAME%@%IP%:/tmp/!FNAME! "%BACKUP_FOLDER%\" >> "%LOG_FILE%" 2>&1
+        "%PLINK%" -batch -ssh %HOSTKEY_ARG% %USERNAME%@%IP% -pw %PASSWORD% "sudo cp %REMOTE_PATH%/!FNAME! /tmp/!FNAME! && sudo chmod 644 /tmp/!FNAME!" >> "%LOG_FILE%" 2>&1
+        "%PSCP%" -batch %HOSTKEY_ARG% -pw %PASSWORD% %USERNAME%@%IP%:/tmp/!FNAME! "%BACKUP_FOLDER%" >> "%LOG_FILE%" 2>&1
         if exist "%BACKUP_FOLDER%\!FNAME!" (
             echo   Downloaded: !FNAME!
         ) else (
@@ -122,3 +130,38 @@ for /f "skip=%RETENTION_FILES% delims=" %%F in ('dir "%BACKUP_FOLDER%" /b /a-d /
 )
 
 goto :eof
+
+
+:ensure_putty_hostkey
+REM Auto-discover server host fingerprint using a single verbose plink run (TOFU).
+REM This updates HOST_FINGERPRINT if a SHA256 token is detected in plink output.
+set "TMP_PLINK_OUT=%TEMP%\plink_ai_hostkey.txt"
+if exist "%TMP_PLINK_OUT%" del "%TMP_PLINK_OUT%"
+
+"%PLINK%" -v -ssh %USERNAME%@%IP% -pw %PASSWORD% exit 2> "%TMP_PLINK_OUT%" || rem
+echo [%date% %time%] Captured plink verbose output for hostkey at %TMP_PLINK_OUT% >> "%LOG_FILE%"
+
+set "DISCOVERED="
+for /f "usebackq delims=" %%L in ("%TMP_PLINK_OUT%") do (
+    echo %%L | findstr /c:"SHA256:" >nul
+    if !ERRORLEVEL! EQU 0 (
+        for %%T in (%%L) do (
+            set "tok=%%T"
+            if "!tok:~0,7!"=="SHA256:" set "DISCOVERED=!tok!"
+        )
+        if defined DISCOVERED goto :__found_fp_ns
+    )
+)
+goto :__no_fp_ns
+
+:__found_fp_ns
+set "HOST_FINGERPRINT=%DISCOVERED%"
+echo [%date% %time%] Discovered/updated host fingerprint: %HOST_FINGERPRINT% >> "%LOG_FILE%"
+del "%TMP_PLINK_OUT%" 2>nul
+goto :eof
+
+:__no_fp_ns
+echo [%date% %time%] NOTE: Could not auto-discover host fingerprint; will proceed with configured value. >> "%LOG_FILE%"
+del "%TMP_PLINK_OUT%" 2>nul
+goto :eof
+
